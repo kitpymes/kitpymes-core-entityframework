@@ -1,0 +1,78 @@
+﻿// -----------------------------------------------------------------------
+// <copyright file="EntityFrameworkConverter.cs" company="Kitpymes">
+// Copyright (c) Kitpymes. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project docs folder for full license information.
+// </copyright>
+// -----------------------------------------------------------------------
+
+namespace Kitpymes.Core.EntityFramework;
+
+using System;
+using Kitpymes.Core.Entities.Enumerations;
+using Kitpymes.Core.Entities.ValueObjects;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+
+/*
+   Clase de extensión EntityFrameworkConverter
+   Contiene las extensiones para convertir enumeraciones o value object
+*/
+
+/// <summary>
+/// Clase de extensión <c>EntityFrameworkConverter</c>.
+/// Contiene las extensiones para convertir enumeraciones o value object.
+/// </summary>
+/// <remarks>
+/// <para>En esta clase se pueden agregar todas las extensiones para convertir enumeraciones o value object.</para>
+/// </remarks>
+public abstract class EntityFrameworkConverter
+{
+    /// <summary>
+    /// Convierte una enumeración.
+    /// </summary>
+    /// <typeparam name="TEnum">Tipo de enumeración.</typeparam>
+    /// <typeparam name="TValue">Tipo de valor del id de la enumeración.</typeparam>
+    /// <returns>ValueConverter{TEnum, string}.</returns>
+    public static ValueConverter<TEnum, string> ToEnumName<TEnum, TValue>()
+        where TEnum : EnumerationBase
+        where TValue : IEquatable<TValue>, IComparable<TValue>
+    => new (v => v.Name, v => EnumerationBase.ToEnum<TEnum>(v) !);
+
+    /// <summary>
+    /// Convierte una enumeración.
+    /// </summary>
+    /// <typeparam name="TEnum">Tipo de enumeración.</typeparam>
+    /// <typeparam name="TValue">Tipo de valor del id de la enumeración.</typeparam>
+    /// <returns>ValueConverter{TEnum, TValue}.</returns>
+    public static ValueConverter<TEnum, int> ToEnumId<TEnum, TValue>()
+        where TEnum : EnumerationBase
+        where TValue : IEquatable<TValue>, IComparable<TValue>
+    => new (v => v.Id, v => EnumerationBase.ToEnum<TEnum>(v) !);
+
+    /// <summary>
+    /// Convierte una enumeración.
+    /// </summary>
+    /// <returns>ValueConverter{StatusEnum, string}.</returns>
+    public static ValueConverter<StatusEnum, string> ToStatus()
+    => new (v => v.Name, v => StatusEnum.ToEnum(v) !);
+
+    /// <summary>
+    /// Convierte un value object.
+    /// </summary>
+    /// <returns>ValueConverter{Email, string}.</returns>
+    public static ValueConverter<Email, string> ToEmail<TEnum>()
+    => new (v => v.Value ?? string.Empty, v => Email.Create(v));
+
+    /// <summary>
+    /// Convierte un value object.
+    /// </summary>
+    /// <returns>ValueConverter{Name, string}.</returns>
+    public static ValueConverter<Name, string> ToName<TEnum>()
+    => new (v => v.Value ?? string.Empty, v => Name.Create(v));
+
+    /// <summary>
+    /// Convierte un value object.
+    /// </summary>
+    /// <returns>ValueConverter{Subdomain, string}.</returns>
+    public static ValueConverter<Subdomain, string> ToSubdomain<TEnum>()
+    => new (v => v.Value ?? string.Empty, v => Subdomain.Create(v));
+}

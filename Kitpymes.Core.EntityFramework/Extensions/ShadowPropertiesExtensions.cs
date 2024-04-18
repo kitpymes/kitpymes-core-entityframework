@@ -78,12 +78,12 @@ public static class ShadowPropertiesExtensions
     /// <param name="modelBuilder">Modelo de entidades.</param>
     /// <param name="enabled">Si se habilita la configuración.</param>
     /// <returns>ModelBuilder.</returns>
-    public static ModelBuilder? WithShadowProperties<TUser, TUserId>(this ModelBuilder modelBuilder, bool enabled = true)
+    public static ModelBuilder? WithShadowProperties<TUser, TUserId>(this ModelBuilder? modelBuilder, bool enabled = true)
         where TUser : IEntityBase
     {
         if (enabled)
         {
-            var entities = modelBuilder.GetEntityTypes<IEntityBase>();
+            var entities = modelBuilder.ToThrowIfNullOrEmpty().GetEntityTypes<IEntityBase>();
 
             if (!entities.ToIsNullOrAny())
             {
@@ -153,18 +153,18 @@ public static class ShadowPropertiesExtensions
     /// <param name="modelBuilder">Modelo de entidades.</param>
     /// <param name="enabled">Si se habilita la configuración.</param>
     /// <returns>ModelBuilder.</returns>
-    public static ModelBuilder? WithTenantShadowProperty<TTenant, TTenantId>(this ModelBuilder modelBuilder,  bool enabled = true)
+    public static ModelBuilder? WithTenantShadowProperty<TTenant, TTenantId>(this ModelBuilder? modelBuilder,  bool enabled = true)
         where TTenant : IEntityBase
     {
         if (enabled)
         {
-            var entities = modelBuilder.GetEntityTypes<ITenant>();
+            var entities = modelBuilder.ToThrowIfNullOrEmpty().GetEntityTypes<ITenant>();
 
             if (!entities.ToIsNullOrAny())
             {
                 foreach (var entity in entities)
                 {
-                    modelBuilder?.Entity(entity).Property<TTenantId>(ITenant.TenantId);
+                    modelBuilder.Entity(entity).Property<TTenantId>(ITenant.TenantId);
                 }
             }
         }

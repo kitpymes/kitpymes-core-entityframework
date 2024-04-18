@@ -40,7 +40,6 @@ public static class ChangeTrackerExtensions
         if (enabled)
         {
             context.ToThrowIfNullOrEmpty();
-            userId.ToThrowIfNullOrEmpty();
 
             if (context.ChangeTracker.HasChanges())
             {
@@ -56,7 +55,7 @@ public static class ChangeTrackerExtensions
                                 {
                                     entry.Property(IAuditedCreation.CreatedDate).CurrentValue = DateTimeOffset.UtcNow;
 
-                                    entry.Property(IAuditedCreation.CreatedUserId).CurrentValue = userId;
+                                    entry.Property(IAuditedCreation.CreatedUserId).CurrentValue = userId.ToThrowIfNullOrEmpty();
                                 }
 
                                 if (entry.Entity is IActive)
@@ -83,7 +82,7 @@ public static class ChangeTrackerExtensions
                             {
                                 entry.Property(IAuditedModification.ModifiedDate).CurrentValue = DateTimeOffset.UtcNow;
 
-                                entry.Property(IAuditedModification.ModifiedUserId).CurrentValue = userId;
+                                entry.Property(IAuditedModification.ModifiedUserId).CurrentValue = userId.ToThrowIfNullOrEmpty();
                             }
 
                             if (entry.Entity is IRowVersion)
@@ -120,7 +119,7 @@ public static class ChangeTrackerExtensions
                                 {
                                     entry.Property(IAuditedDeletion.DeletedDate).CurrentValue = DateTimeOffset.UtcNow;
 
-                                    entry.Property(IAuditedDeletion.DeletedUserId).CurrentValue = userId;
+                                    entry.Property(IAuditedDeletion.DeletedUserId).CurrentValue = userId.ToThrowIfNullOrEmpty();
                                 }
 
                                 if (entry.Entity is IDelete)
@@ -159,19 +158,23 @@ public static class ChangeTrackerExtensions
         if (enabled)
         {
             context.ToThrowIfNullOrEmpty();
-            tenantId.ToThrowIfNullOrEmpty();
 
             if (context.ChangeTracker.HasChanges())
             {
                 var entries = context.ChangeTracker.Entries().Where(entry => entry.Entity is not INotMapped && entry.Entity is ITenant && entry.State is EntityState.Added);
 
-                foreach (var entry in entries)
+                if (entries.Any())
                 {
-                    var oldTenantId = entry.Property(ITenant.TenantId).CurrentValue;
+                    tenantId.ToThrowIfNullOrEmpty();
 
-                    if (oldTenantId.ToIsNullOrEmpty() || !oldTenantId.ToIsEqual(tenantId))
+                    foreach (var entry in entries)
                     {
-                        entry.Property(ITenant.TenantId).CurrentValue = tenantId;
+                        var oldTenantId = entry.Property(ITenant.TenantId).CurrentValue;
+
+                        if (oldTenantId.ToIsNullOrEmpty() || oldTenantId.ToIsNotEqual(tenantId))
+                        {
+                            entry.Property(ITenant.TenantId).CurrentValue = tenantId;
+                        }
                     }
                 }
             }

@@ -3,9 +3,8 @@ using System.Collections.Generic;
 
 namespace Kitpymes.Core.EntityFramework.Tests
 {
-    public class FakeEntity : IEntityBase
+    public class FakeEntity : EntityBase<long>
     {
-        public long Id { get; private set; }
         public string? Name { get; private set; }
         public string? Surname { get; private set; }
         public FakeValueObject FakeValueObject { get; private set; } = new FakeValueObject();

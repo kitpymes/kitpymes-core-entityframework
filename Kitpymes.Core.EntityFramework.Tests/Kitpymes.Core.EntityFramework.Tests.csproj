@@ -2,19 +2,12 @@
 
   <Import Project="$(SolutionDir)docs/props/Common.Build.props" Condition="Exists('$(SolutionDir)docs/props/Common.Build.props')" />
 
-  <!-- TODO: REEMPLAZAR POR NUGET -->
   <ItemGroup>
-    <Reference Include="Kitpymes.Core.Shared">
-      <HintPath>..\..\kitpymes-core-shared\Kitpymes.Core.Shared\bin\Debug\net8.0\Kitpymes.Core.Shared.dll</HintPath>
-    </Reference>
+    <PackageReference Include="Kitpymes.Core.Shared" Version="2.0.1" />
 
-    <Reference Include="Kitpymes.Core.Entities">
-      <HintPath>..\..\kitpymes-core-entities\Kitpymes.Core.Entities\bin\Debug\net8.0\Kitpymes.Core.Entities.dll</HintPath>
-    </Reference>
+    <PackageReference Include="Kitpymes.Core.Entities" Version="2.0.0" />
 
-    <Reference Include="Kitpymes.Core.Repositories">
-      <HintPath>..\..\kitpymes-core-repositories\Kitpymes.Core.Repositories\bin\Debug\net8.0\Kitpymes.Core.Repositories.dll</HintPath>
-    </Reference>
+    <PackageReference Include="Kitpymes.Core.Repositories" Version="2.0.0" />
   </ItemGroup>
 
   <ItemGroup>

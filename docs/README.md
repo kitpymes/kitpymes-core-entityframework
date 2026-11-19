@@ -1,21 +1,21 @@
-﻿# <img src="https://github.com/kitpymes/template-netcore-entityframework/raw/master/docs/images/logo.png" height="30px"> Kitpymes.Core.EntityFramework
+﻿# <img src="https://github.com/kitpymes/kitpymes-core-entityframework/raw/master/docs/images/logo.png" height="30px"> Kitpymes.Core.EntityFramework
 
 **Librería para utilizar Entity Framework para el acceso a datos**
 
-[![Build Status](https://github.com/kitpymes/template-netcore-entityframework/workflows/Kitpymes.Core.EntityFramework/badge.svg)](https://github.com/kitpymes/template-netcore-entityframework/actions)
+[![Build Status](https://github.com/kitpymes/kitpymes-core-entityframework/actions/workflows/ci.yml/badge.svg)](https://github.com/kitpymes/kitpymes-core-entityframework/actions/workflows/ci.yml)
 [![NuGet Status](https://img.shields.io/nuget/v/Kitpymes.Core.EntityFramework)](https://www.nuget.org/packages/Kitpymes.Core.EntityFramework/)
 [![NuGet Download](https://img.shields.io/nuget/dt/Kitpymes.Core.EntityFramework)](https://www.nuget.org/stats/packages/Kitpymes.Core.EntityFramework?groupby=Version)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/kitpymes/template-netcore-entityframework/blob/master/docs/LICENSE.txt)
-[![Size Repo](https://img.shields.io/github/repo-size/kitpymes/template-netcore-entityframework)](https://github.com/kitpymes/template-netcore-entityframework/)
-[![Last Commit](https://img.shields.io/github/last-commit/kitpymes/template-netcore-entityframework)](https://github.com/kitpymes/template-netcore-entityframework/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/kitpymes/kitpymes-core-entityframework/blob/master/docs/LICENSE.txt)
+[![Size Repo](https://img.shields.io/github/repo-size/kitpymes/kitpymes-core-entityframework)](https://github.com/kitpymes/kitpymes-core-entityframework/)
+[![Last Commit](https://img.shields.io/github/last-commit/kitpymes/kitpymes-core-entityframework)](https://github.com/kitpymes/kitpymes-core-entityframework/)
 
 ## 📋 Requerimientos 
 
-* Visual Studio = 2022
+* Visual Studio 2026 o superior
 
-* NET TargetFramework = net8.0
+* NET TargetFramework = net10.0
 
-* Net Core SDK = 8.0.x
+* SDK de .NET = 10.0.x
 
 * C# = 12
 

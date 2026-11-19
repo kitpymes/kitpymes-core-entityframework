@@ -1,16 +1,16 @@
 # v.1.1.4
-- Se agrega la configuraci髇 de la ShadowProperty "IStatic".
-- Se agrega la configuraci髇 de la ShadowProperty "INotVisible".
+- Se agrega la configuraci贸n de la ShadowProperty "IStatic".
+- Se agrega la configuraci贸n de la ShadowProperty "INotVisible".
 
 # v.1.1.3
-- Se actualizan librer韆s.
-- Se agrega la configuraci髇 de la ShadowProperty "RowVersion".
+- Se actualizan librer铆as.
+- Se agrega la configuraci贸n de la ShadowProperty "RowVersion".
 - Se actualizan las extensiones de "ChangeTrackerExtensions".
 - Se actualizan las extensiones de "ShadowPropertiesExtensions".
 - Se actualiza el contexto "IEntityFrameworkDbContext".
 
 # v.1.1.2
-- Se actualizan librer韆s.
+- Se actualizan librer铆as.
 
 # v.1.1.1
 - Se introducen mejoras en el proyecto.
@@ -25,25 +25,25 @@
 - Se introducen mejoras en el proyecto.
 
 # v.1.0.7
-- Se migra de la versi髇 netcoreapp3 a net5 y se actualizan librer韆s.
+- Se migra de la versi贸n netcoreapp3 a net5 y se actualizan librer铆as.
 
 # v.1.0.6
-- Se actualiza la extensi髇 de carga del contexto de sqlserver.
+- Se actualiza la extensi贸n de carga del contexto de sqlserver.
 
 # v.1.0.5
-- Se actualiza la extensi髇 de carga del contexto de sqlserver.
+- Se actualiza la extensi贸n de carga del contexto de sqlserver.
 
 # v.1.0.4
-- Se actualiza la extensi髇 de carga del contexto de sqlserver.
+- Se actualiza la extensi贸n de carga del contexto de sqlserver.
 
 # v.1.0.3
-- Se actualiza la extensi髇 de carga del contexto de sqlserver.
+- Se actualiza la extensi贸n de carga del contexto de sqlserver.
 
 # v.1.0.2
-- Se actualiza la extensi髇 de carga del contexto de sqlserver.
+- Se actualiza la extensi贸n de carga del contexto de sqlserver.
 
 # v.1.0.1
-- Se actualiza la extensi髇 de carga del contexto de sqlserver.
+- Se actualiza la extensi贸n de carga del contexto de sqlserver.
 
 # v.1.0.0
-- Se genera la primera versi髇 del paquete del proyecto.
+- Se genera la primera versi贸n del paquete del proyecto.

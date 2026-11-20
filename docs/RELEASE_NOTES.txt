@@ -1,3 +1,22 @@
+# v.2.0.0
+Versión mayor: rompe a quien venga de la 1.1.4 (la última publicada en NuGet, .NET 5). Abajo, qué cambia y cómo migrar.
+
+- Requiere .NET 10 o superior.
+- Usa las librerías Kitpymes ya migradas desde NuGet (Shared 2.0.1, Entities 2.0.0, Repositories 2.0.0); quien la use debe migrar también esas (ver sus release notes).
+- El código pasa a github.com/kitpymes/kitpymes-core-entityframework y el paquete se publica desde GitHub Actions.
+
+## Cambios incompatibles y cómo migrar desde 1.1.4
+
+1. Métodos del repositorio con otro nombre (igual que en Repositories 2.0.0)
+   - GetOne / GetOneAsync -> Get / GetAsync, que devuelven null si no hay resultado.
+   - Nuevos GetByKey / GetByKeyAsync para buscar por clave.
+
+2. Clases con otro nombre
+   - DependencyInjection -> EntityFrameworkDependencyInjection.
+   - OptimizedContextExtensions -> OptimizedDbContextExtensions.
+
+3. Entities 2.0.0 cambió sus espacios de nombres y las interfaces de auditoría; las entidades de quien use esta librería deben migrarse según sus release notes.
+
 # v.1.1.4
 - Se agrega la configuración de la ShadowProperty "IStatic".
 - Se agrega la configuración de la ShadowProperty "INotVisible".

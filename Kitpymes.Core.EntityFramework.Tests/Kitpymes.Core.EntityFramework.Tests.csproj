@@ -7,7 +7,7 @@
 
     <PackageReference Include="Kitpymes.Core.Entities" Version="2.0.0" />
 
-    <PackageReference Include="Kitpymes.Core.Repositories" Version="2.0.0" />
+    <PackageReference Include="Kitpymes.Core.Repositories" Version="2.0.1" />
   </ItemGroup>
 
   <ItemGroup>

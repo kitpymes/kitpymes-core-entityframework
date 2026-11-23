@@ -16,6 +16,12 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.1" />
+    <!-- Microsoft.EntityFrameworkCore.SqlServer 8.0.1 trae Microsoft.Data.SqlClient 5.1.1 y, con él, Azure.Identity 1.7.0 y
+         System.IdentityModel.Tokens.Jwt 6.24.0, con vulnerabilidades conocidas (GHSA-98g6-xh36-x2p7, GHSA-5mfx-4wcx-rv27,
+         GHSA-wvxc-855f-jvrv, GHSA-m5vv-6r4h-3vj9, GHSA-59j7-ghrg-fj52). Se fijan versiones corregidas: llegan también
+         a quien instala el paquete. -->
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+    <PackageReference Include="Azure.Identity" Version="1.18.0" />
     <PackageReference Include="Remotion.Linq" Version="2.2.0" />
   </ItemGroup>
 

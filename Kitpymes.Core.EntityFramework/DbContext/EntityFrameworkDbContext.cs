@@ -9,10 +9,8 @@ namespace Kitpymes.Core.EntityFramework;
 
 using System;
 using System.Data;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Kitpymes.Core.Shared.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -44,32 +42,22 @@ public abstract class EntityFrameworkDbContext : DbContext, IEntityFrameworkDbCo
     #region Save
 
     /// <inheritdoc/>
-    public new virtual void SaveChanges()
-    {
-        try
-        {
-            base.SaveChanges();
-        }
-        catch (Exception exception)
-        {
-            ThrowSave(exception);
-        }
-    }
+    /// <remarks>
+    /// <para>Si falla, lanza la excepción que lanza EF Core, sin cambiarla (con su tipo, sus <c>Entries</c> y su <c>InnerException</c>).</para>
+    /// </remarks>
+    public new virtual void SaveChanges() => base.SaveChanges();
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// <para>Si falla, lanza la excepción que lanza EF Core, sin cambiarla (con su tipo, sus <c>Entries</c> y su <c>InnerException</c>).</para>
+    /// </remarks>
     public new virtual async Task SaveChangesAsync(CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            await base.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception exception)
-        {
-            await ThrowSaveAsync(exception).ConfigureAwait(false);
-        }
-    }
+        => await base.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// <para>Si falla, deshace la transacción, cierra la conexión y lanza la excepción que lanza EF Core, sin cambiarla. El contexto no se libera.</para>
+    /// </remarks>
     public virtual void SaveChangesWithTransaction(IsolationLevel isolationLevel = IsolationLevel.ReadCommitted)
     {
         try
@@ -82,15 +70,18 @@ public abstract class EntityFrameworkDbContext : DbContext, IEntityFrameworkDbCo
 
             Transaction?.Commit();
         }
-        catch (Exception exception)
+        catch
         {
             CloseTransaction();
 
-            ThrowSave(exception);
+            throw;
         }
     }
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// <para>Si falla, deshace la transacción, cierra la conexión y lanza la excepción que lanza EF Core, sin cambiarla. El contexto no se libera.</para>
+    /// </remarks>
     public virtual async Task SaveChangesWithTransactionAsync(IsolationLevel isolationLevel = IsolationLevel.ReadCommitted, CancellationToken cancellationToken = default)
     {
         try
@@ -109,139 +100,17 @@ public abstract class EntityFrameworkDbContext : DbContext, IEntityFrameworkDbCo
                 await Transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
             }
         }
-        catch (Exception exception)
+        catch
         {
             await CloseTransactionAsync().ConfigureAwait(false);
 
-            await ThrowSaveAsync(exception).ConfigureAwait(false);
+            throw;
         }
     }
 
     #endregion Save
 
     #region Private
-
-    private static void ThrowSave(Exception exception)
-    {
-        var sb = new StringBuilder();
-
-        switch (exception)
-        {
-            case DbUpdateConcurrencyException dbUpdateConcurrencyException when exception is DbUpdateConcurrencyException:
-
-                sb.AppendLine(dbUpdateConcurrencyException.ToFullMessage());
-
-                if (dbUpdateConcurrencyException.Entries is not null)
-                {
-                    foreach (var eve in dbUpdateConcurrencyException.Entries)
-                    {
-                        sb.Append("Entity of type ")
-                            .Append(eve.Entity.GetType().Name)
-                            .Append(" in state ")
-                            .Append(eve.State)
-                            .AppendLine(" could not be updated");
-                    }
-                }
-
-                throw new DbUpdateConcurrencyException(sb.ToString());
-
-            case DbUpdateException dbUpdateException when exception is DbUpdateException:
-
-                sb.AppendLine(dbUpdateException.ToFullMessage());
-
-                if (dbUpdateException.Entries is not null)
-                {
-                    foreach (var eve in dbUpdateException.Entries)
-                    {
-                        sb.Append("Entity of type ")
-                            .Append(eve.Entity.GetType().Name)
-                            .Append(" in state ")
-                            .Append(eve.State)
-                            .AppendLine(" could not be updated");
-                    }
-                }
-
-                throw new DbUpdateException(sb.ToString());
-
-            default:
-
-                sb.AppendLine(exception.ToFullMessage());
-
-                if (exception?.Data is not null)
-                {
-                    foreach (var eve in exception.Data)
-                    {
-                        sb.Append("Entity of type ")
-                            .AppendLine(eve?.GetType().Name);
-                    }
-                }
-
-                throw new DbUpdateException(sb.ToString());
-        }
-    }
-
-    private static async Task ThrowSaveAsync(Exception exception)
-    {
-        var sb = new StringBuilder();
-
-        switch (exception)
-        {
-            case DbUpdateConcurrencyException dbUpdateConcurrencyException when exception is DbUpdateConcurrencyException:
-
-                sb.AppendLine(dbUpdateConcurrencyException.ToFullMessage());
-
-                if (dbUpdateConcurrencyException.Entries is not null)
-                {
-                    foreach (var eve in dbUpdateConcurrencyException.Entries)
-                    {
-                        sb.Append("Entity of type ")
-                            .Append(eve.Entity.GetType().Name)
-                            .Append(" in state ")
-                            .Append(eve.State)
-                            .AppendLine(" could not be updated");
-                    }
-                }
-
-                throw new DbUpdateConcurrencyException(sb.ToString());
-
-            case DbUpdateException dbUpdateException when exception is DbUpdateException:
-
-                sb.AppendLine(dbUpdateException.ToFullMessage());
-
-                if (dbUpdateException.Entries is not null)
-                {
-                    foreach (var eve in dbUpdateException.Entries)
-                    {
-                        sb.Append("Entity of type ")
-                            .Append(eve.Entity.GetType().Name)
-                            .Append(" in state ")
-                            .Append(eve.State)
-                            .AppendLine(" could not be updated");
-                    }
-                }
-
-                throw new DbUpdateException(sb.ToString());
-
-            default:
-
-                sb.AppendLine(exception.ToFullMessage());
-
-                if (exception?.Data is not null)
-                {
-                    foreach (var eve in exception.Data)
-                    {
-                        sb.Append("Entity of type ")
-                            .AppendLine(eve?.GetType().Name);
-                    }
-                }
-
-                throw new DbUpdateException(sb.ToString());
-        }
-
-#pragma warning disable CS0162 // Se detectó código inaccesible
-        await Task.CompletedTask.ConfigureAwait(false);
-#pragma warning restore CS0162 // Se detectó código inaccesible
-    }
 
     // Deshace la transacción y cierra la conexión. Un error al cerrar no puede tapar el error original, que es el
     // que se relanza, y el contexto no se libera: es de quien lo creó (normalmente, el contenedor de dependencias).

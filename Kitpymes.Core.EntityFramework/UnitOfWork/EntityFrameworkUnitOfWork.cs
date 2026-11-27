@@ -219,31 +219,56 @@ public abstract class EntityFrameworkUnitOfWork<TDbContext> : IEntityFrameworkUn
 #pragma warning restore CS0162 // Se detectó código inaccesible
     }
 
+    // Deshace la transacción y cierra la conexión. Un error al cerrar no puede tapar el error original.
     private void CloseTransaction()
     {
-        Transaction?.Dispose();
-
-        if (this is not null)
+        try
         {
-            Context.Database.CloseConnection();
+            Transaction?.Dispose();
 
-            Context.Dispose();
+            // Cerrar la conexión sólo existe en los proveedores relacionales.
+            if (Context.Database.IsRelational())
+            {
+                Context.Database.CloseConnection();
+            }
         }
+        catch (Exception)
+        {
+            // Se ignora a propósito: sale el error original.
+        }
+        finally
+        {
+            Transaction = null!;
+        }
+
+        Context.Dispose();
     }
 
     private async Task CloseTransactionAsync()
     {
-        if (Transaction is not null)
+        try
         {
-            await Transaction.DisposeAsync().ConfigureAwait(false);
+            if (Transaction is not null)
+            {
+                await Transaction.DisposeAsync().ConfigureAwait(false);
+            }
+
+            // Cerrar la conexión sólo existe en los proveedores relacionales.
+            if (Context.Database.IsRelational())
+            {
+                await Context.Database.CloseConnectionAsync().ConfigureAwait(false);
+            }
+        }
+        catch (Exception)
+        {
+            // Se ignora a propósito: sale el error original.
+        }
+        finally
+        {
+            Transaction = null!;
         }
 
-        if (this is not null)
-        {
-            await Context.Database.CloseConnectionAsync().ConfigureAwait(false);
-
-            await Context.DisposeAsync().ConfigureAwait(false);
-        }
+        await Context.DisposeAsync().ConfigureAwait(false);
     }
 
     #endregion Private

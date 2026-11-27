@@ -7,6 +7,7 @@
 
 namespace Kitpymes.Core.EntityFramework;
 
+using System;
 using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
@@ -55,7 +56,7 @@ public abstract class EntityFrameworkDbContext : DbContext, IEntityFrameworkDbCo
 
     /// <inheritdoc/>
     /// <remarks>
-    /// <para>Si falla, cierra la transacción y lanza la excepción que lanza EF Core, sin cambiarla.</para>
+    /// <para>Si falla, deshace la transacción, cierra la conexión y lanza la excepción que lanza EF Core, sin cambiarla. El contexto no se libera.</para>
     /// </remarks>
     public virtual void SaveChangesWithTransaction(IsolationLevel isolationLevel = IsolationLevel.ReadCommitted)
     {
@@ -79,7 +80,7 @@ public abstract class EntityFrameworkDbContext : DbContext, IEntityFrameworkDbCo
 
     /// <inheritdoc/>
     /// <remarks>
-    /// <para>Si falla, cierra la transacción y lanza la excepción que lanza EF Core, sin cambiarla.</para>
+    /// <para>Si falla, deshace la transacción, cierra la conexión y lanza la excepción que lanza EF Core, sin cambiarla. El contexto no se libera.</para>
     /// </remarks>
     public virtual async Task SaveChangesWithTransactionAsync(IsolationLevel isolationLevel = IsolationLevel.ReadCommitted, CancellationToken cancellationToken = default)
     {
@@ -111,38 +112,52 @@ public abstract class EntityFrameworkDbContext : DbContext, IEntityFrameworkDbCo
 
     #region Private
 
+    // Deshace la transacción y cierra la conexión. Un error al cerrar no puede tapar el error original, que es el
+    // que se relanza, y el contexto no se libera: es de quien lo creó (normalmente, el contenedor de dependencias).
     private void CloseTransaction()
     {
-        Transaction?.Dispose();
-
-        if (this is not null)
+        try
         {
-            // Cerrar la conexión sólo existe en los proveedores relacionales: con la BD en memoria lanzaría
-            // y taparía el error original.
+            Transaction?.Dispose();
+
+            // Cerrar la conexión sólo existe en los proveedores relacionales.
             if (Database.IsRelational())
             {
                 Database.CloseConnection();
             }
-
-            Dispose();
+        }
+        catch (Exception)
+        {
+            // Se ignora a propósito: sale el error original.
+        }
+        finally
+        {
+            Transaction = null!;
         }
     }
 
     private async Task CloseTransactionAsync()
     {
-        if (Transaction is not null)
+        try
         {
-            await Transaction.DisposeAsync().ConfigureAwait(false);
-        }
+            if (Transaction is not null)
+            {
+                await Transaction.DisposeAsync().ConfigureAwait(false);
+            }
 
-        if (this is not null)
-        {
+            // Cerrar la conexión sólo existe en los proveedores relacionales.
             if (Database.IsRelational())
             {
                 await Database.CloseConnectionAsync().ConfigureAwait(false);
             }
-
-            await DisposeAsync().ConfigureAwait(false);
+        }
+        catch (Exception)
+        {
+            // Se ignora a propósito: sale el error original.
+        }
+        finally
+        {
+            Transaction = null!;
         }
     }
 

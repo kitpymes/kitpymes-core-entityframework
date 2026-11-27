@@ -9,7 +9,6 @@ namespace Kitpymes.Core.EntityFramework;
 
 using System;
 using System.Data;
-using System.Text;
 using System.Threading.Tasks;
 using Kitpymes.Core.Shared.Extensions;
 using Microsoft.EntityFrameworkCore;
@@ -65,11 +64,11 @@ public abstract class EntityFrameworkUnitOfWork<TDbContext> : IEntityFrameworkUn
 
             Transaction?.Commit();
         }
-        catch (Exception exception)
+        catch
         {
             CloseTransaction();
 
-            ThrowSave(exception);
+            throw;
         }
     }
 
@@ -85,11 +84,11 @@ public abstract class EntityFrameworkUnitOfWork<TDbContext> : IEntityFrameworkUn
                 await Transaction.CommitAsync().ConfigureAwait(false);
             }
         }
-        catch (Exception exception)
+        catch
         {
             await CloseTransactionAsync().ConfigureAwait(false);
 
-            await ThrowSaveAsync(exception).ConfigureAwait(false);
+            throw;
         }
     }
 
@@ -97,152 +96,52 @@ public abstract class EntityFrameworkUnitOfWork<TDbContext> : IEntityFrameworkUn
 
     #region Private
 
-    private static void ThrowSave(Exception exception)
-    {
-        var sb = new StringBuilder();
-
-        switch (exception)
-        {
-            case DbUpdateConcurrencyException dbUpdateConcurrencyException when exception is DbUpdateConcurrencyException:
-
-                sb.AppendLine(dbUpdateConcurrencyException.ToFullMessage());
-
-                if (dbUpdateConcurrencyException.Entries is not null)
-                {
-                    foreach (var eve in dbUpdateConcurrencyException.Entries)
-                    {
-                        sb.Append("Entity of type ")
-                            .Append(eve.Entity.GetType().Name)
-                            .Append(" in state ")
-                            .Append(eve.State)
-                            .AppendLine(" could not be updated");
-                    }
-                }
-
-                throw new DbUpdateConcurrencyException(sb.ToString());
-
-            case DbUpdateException dbUpdateException when exception is DbUpdateException:
-
-                sb.AppendLine(dbUpdateException.ToFullMessage());
-
-                if (dbUpdateException.Entries is not null)
-                {
-                    foreach (var eve in dbUpdateException.Entries)
-                    {
-                        sb.Append("Entity of type ")
-                            .Append(eve.Entity.GetType().Name)
-                            .Append(" in state ")
-                            .Append(eve.State)
-                            .AppendLine(" could not be updated");
-                    }
-                }
-
-                throw new DbUpdateException(sb.ToString());
-
-            default:
-
-                sb.AppendLine(exception.ToFullMessage());
-
-                if (exception?.Data is not null)
-                {
-                    foreach (var eve in exception.Data)
-                    {
-                        sb.Append("Entity of type ")
-                            .AppendLine(eve?.GetType().Name);
-                    }
-                }
-
-                throw new DbUpdateException(sb.ToString());
-        }
-    }
-
-    private static async Task ThrowSaveAsync(Exception exception)
-    {
-        var sb = new StringBuilder();
-
-        switch (exception)
-        {
-            case DbUpdateConcurrencyException dbUpdateConcurrencyException when exception is DbUpdateConcurrencyException:
-
-                sb.AppendLine(dbUpdateConcurrencyException.ToFullMessage());
-
-                if (dbUpdateConcurrencyException.Entries is not null)
-                {
-                    foreach (var eve in dbUpdateConcurrencyException.Entries)
-                    {
-                        sb.Append("Entity of type ")
-                            .Append(eve.Entity.GetType().Name)
-                            .Append(" in state ")
-                            .Append(eve.State)
-                            .AppendLine(" could not be updated");
-                    }
-                }
-
-                throw new DbUpdateConcurrencyException(sb.ToString());
-
-            case DbUpdateException dbUpdateException when exception is DbUpdateException:
-
-                sb.AppendLine(dbUpdateException.ToFullMessage());
-
-                if (dbUpdateException.Entries is not null)
-                {
-                    foreach (var eve in dbUpdateException.Entries)
-                    {
-                        sb.Append("Entity of type ")
-                            .Append(eve.Entity.GetType().Name)
-                            .Append(" in state ")
-                            .Append(eve.State)
-                            .AppendLine(" could not be updated");
-                    }
-                }
-
-                throw new DbUpdateException(sb.ToString());
-
-            default:
-
-                sb.AppendLine(exception.ToFullMessage());
-
-                if (exception?.Data is not null)
-                {
-                    foreach (var eve in exception.Data)
-                    {
-                        sb.Append("Entity of type ")
-                            .AppendLine(eve?.GetType().Name);
-                    }
-                }
-
-                throw new DbUpdateException(sb.ToString());
-        }
-
-#pragma warning disable CS0162 // Se detectó código inaccesible
-        await Task.CompletedTask.ConfigureAwait(false);
-#pragma warning restore CS0162 // Se detectó código inaccesible
-    }
-
+    // Deshace la transacción y cierra la conexión. Un error al cerrar no puede tapar el error original, que es el
+    // que se relanza, y el contexto no se libera: es de quien lo creó (normalmente, el contenedor de dependencias).
     private void CloseTransaction()
     {
-        Transaction?.Dispose();
-
-        if (this is not null)
+        try
         {
-            Context.Database.CloseConnection();
+            Transaction?.Dispose();
 
-            Context.Dispose();
+            // Cerrar la conexión sólo existe en los proveedores relacionales.
+            if (Context.Database.IsRelational())
+            {
+                Context.Database.CloseConnection();
+            }
+        }
+        catch (Exception)
+        {
+            // Se ignora a propósito: sale el error original.
+        }
+        finally
+        {
+            Transaction = null!;
         }
     }
 
     private async Task CloseTransactionAsync()
     {
-        if (Transaction is not null)
+        try
         {
-            await Transaction.DisposeAsync().ConfigureAwait(false);
+            if (Transaction is not null)
+            {
+                await Transaction.DisposeAsync().ConfigureAwait(false);
+            }
+
+            // Cerrar la conexión sólo existe en los proveedores relacionales.
+            if (Context.Database.IsRelational())
+            {
+                await Context.Database.CloseConnectionAsync().ConfigureAwait(false);
+            }
         }
-
-        if (this is not null)
+        catch (Exception)
         {
-            await Context.Database.CloseConnectionAsync().ConfigureAwait(false);
-
-            await Context.DisposeAsync().ConfigureAwait(false);
+            // Se ignora a propósito: sale el error original.
+        }
+        finally
+        {
+            Transaction = null!;
         }
     }
 

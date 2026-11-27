@@ -2,28 +2,41 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Kitpymes.Core.EntityFramework.Tests
 {
     /// <summary>
-    /// Al guardar, el error de la base de datos sale tal cual lo lanza EF Core: la misma excepción, con su tipo,
-    /// sus Entries y su InnerException. Antes se lanzaba una DbUpdateException nueva con el mensaje completo de
-    /// la base de datos (que trae los valores, como un correo repetido) y sin la excepción original, así que el
-    /// consumidor no podía traducir un índice único repetido a un conflicto y el valor acababa en el log.
+    /// Al guardar (por el contexto o por la unidad de trabajo), el error de la base de datos sale tal cual lo lanza
+    /// EF Core: la misma excepción, con su tipo, sus Entries y su InnerException. Antes se lanzaba una
+    /// DbUpdateException nueva con el mensaje completo de la base de datos (que trae los valores, como un correo
+    /// repetido) y sin la excepción original: el consumidor no podía traducir un duplicado a un conflicto y el valor
+    /// acababa en el log. Y al fallar con transacción, el contexto ya no se libera.
+    /// La BD en memoria no tiene transacciones de verdad: aquí no se prueba que se deshagan.
     /// </summary>
     [TestClass]
     public class EntityFrameworkDbContextSaveTests
     {
-        private const string ValorDeLaBaseDeDatos = "ana@ejemplo.test";
-
-        public static System.Collections.Generic.IEnumerable<object[]> Guardados()
+        public static IEnumerable<object[]> Guardados()
         {
             yield return new object[] { "SaveChanges" };
             yield return new object[] { "SaveChangesAsync" };
             yield return new object[] { "SaveChangesWithTransaction" };
             yield return new object[] { "SaveChangesWithTransactionAsync" };
+            yield return new object[] { "UnitOfWork.Save" };
+            yield return new object[] { "UnitOfWork.SaveAsync" };
+            yield return new object[] { "UnitOfWork.Save con transacción" };
+            yield return new object[] { "UnitOfWork.SaveAsync con transacción" };
+        }
+
+        public static IEnumerable<object[]> GuardadosConTransaccion()
+        {
+            yield return new object[] { "SaveChangesWithTransaction" };
+            yield return new object[] { "SaveChangesWithTransactionAsync" };
+            yield return new object[] { "UnitOfWork.Save con transacción" };
+            yield return new object[] { "UnitOfWork.SaveAsync con transacción" };
         }
 
         [TestMethod]
@@ -32,12 +45,11 @@ namespace Kitpymes.Core.EntityFramework.Tests
         {
             var original = new DbUpdateException(
                 "An error occurred while saving the entity changes. See the inner exception for details.",
-                new InvalidOperationException($"Cannot insert duplicate key row. The duplicate key value is ({ValorDeLaBaseDeDatos})."));
+                new InvalidOperationException("Cannot insert duplicate key row. The duplicate key value is (ana@ejemplo.test)."));
 
-            var lanzada = await GuardarConFallo(guardado, original).ConfigureAwait(false);
+            var (lanzada, _) = await GuardarConFallo(guardado, original).ConfigureAwait(false);
 
             Assert.AreSame(original, lanzada, $"{guardado} no lanza la excepción original sino {Describir(lanzada)}.");
-            Assert.IsFalse(lanzada.Message.Contains(ValorDeLaBaseDeDatos, StringComparison.Ordinal), $"{guardado}: el mensaje trae el valor de la base de datos.");
         }
 
         [TestMethod]
@@ -46,7 +58,7 @@ namespace Kitpymes.Core.EntityFramework.Tests
         {
             var original = new DbUpdateConcurrencyException("Concurrencia.");
 
-            var lanzada = await GuardarConFallo(guardado, original).ConfigureAwait(false);
+            var (lanzada, _) = await GuardarConFallo(guardado, original).ConfigureAwait(false);
 
             Assert.AreSame(original, lanzada, $"{guardado} no lanza la excepción original sino {Describir(lanzada)}.");
         }
@@ -57,9 +69,29 @@ namespace Kitpymes.Core.EntityFramework.Tests
         {
             var original = new OperationCanceledException("Cancelado.");
 
-            var lanzada = await GuardarConFallo(guardado, original).ConfigureAwait(false);
+            var (lanzada, _) = await GuardarConFallo(guardado, original).ConfigureAwait(false);
 
             Assert.AreSame(original, lanzada, $"{guardado} no lanza la cancelación sino {Describir(lanzada)}.");
+        }
+
+        [TestMethod]
+        [DynamicData(nameof(GuardadosConTransaccion))]
+        public async Task Guardar_ConTransaccionYError_NoLiberaElContexto(string guardado)
+        {
+            var (_, context) = await GuardarConFallo(guardado, new DbUpdateException("Fallo.")).ConfigureAwait(false);
+
+            try
+            {
+                _ = await context.Set<FakeEntity>().CountAsync().ConfigureAwait(false);
+            }
+            catch (ObjectDisposedException)
+            {
+                Assert.Fail($"{guardado}: tras el error el contexto está liberado.");
+            }
+            finally
+            {
+                await context.DisposeAsync().ConfigureAwait(false);
+            }
         }
 
         [TestMethod]
@@ -70,7 +102,7 @@ namespace Kitpymes.Core.EntityFramework.Tests
 
             using (var context = CrearContexto(nombre, interceptor: null))
             {
-                context.Set<FakeEntity>().Add(new FakeEntity(1, "Uno", "Apellido", new FakeValueObject()));
+                context.Set<FakeEntity>().Add(NuevaEntidad());
                 await Guardar(context, guardado).ConfigureAwait(false);
             }
 
@@ -80,36 +112,54 @@ namespace Kitpymes.Core.EntityFramework.Tests
             }
         }
 
-        private static async Task<Exception> GuardarConFallo(string guardado, Exception fallo)
+        // Devuelve la excepción y el contexto (sin liberar: lo libera quien llama, si lo necesita).
+        private static async Task<(Exception Lanzada, FakeContext Context)> GuardarConFallo(string guardado, Exception fallo)
         {
             var context = CrearContexto($"bd-{Guid.NewGuid()}", new FalloAlGuardarInterceptor(fallo));
 
             try
             {
-                context.Set<FakeEntity>().Add(new FakeEntity(1, "Uno", "Apellido", new FakeValueObject()));
+                context.Set<FakeEntity>().Add(NuevaEntidad());
                 await Guardar(context, guardado).ConfigureAwait(false);
             }
             catch (Exception exception)
             {
-                return exception;
-            }
-            finally
-            {
-                await context.DisposeAsync().ConfigureAwait(false);
+                return (exception, context);
             }
 
-            Assert.Fail($"{guardado} no ha lanzado ninguna excepción.");
-            return null!;
+            await context.DisposeAsync().ConfigureAwait(false);
+            throw new AssertFailedException($"{guardado} no ha lanzado ninguna excepción.");
         }
 
-        private static Task Guardar(FakeContext context, string guardado) => guardado switch
+        private static FakeEntity NuevaEntidad() => new FakeEntity(1, "Uno", "Apellido", new FakeValueObject());
+
+        private static Task Guardar(FakeContext context, string guardado)
         {
-            "SaveChanges" => Task.Run(() => context.SaveChanges()),
-            "SaveChangesAsync" => context.SaveChangesAsync(),
-            "SaveChangesWithTransaction" => Task.Run(() => context.SaveChangesWithTransaction()),
-            "SaveChangesWithTransactionAsync" => context.SaveChangesWithTransactionAsync(),
-            _ => throw new ArgumentOutOfRangeException(nameof(guardado), guardado, null),
-        };
+            var unitOfWork = new FakeUnitOfWork(context);
+
+            return guardado switch
+            {
+                "SaveChanges" => Task.Run(() => context.SaveChanges()),
+                "SaveChangesAsync" => context.SaveChangesAsync(),
+                "SaveChangesWithTransaction" => Task.Run(() => context.SaveChangesWithTransaction()),
+                "SaveChangesWithTransactionAsync" => context.SaveChangesWithTransactionAsync(),
+                "UnitOfWork.Save" => Task.Run(() => unitOfWork.Save(useChangeTracker: false)),
+                "UnitOfWork.SaveAsync" => unitOfWork.SaveAsync(useChangeTracker: false),
+                "UnitOfWork.Save con transacción" => Task.Run(() =>
+                {
+                    unitOfWork.OpenTransaction();
+                    unitOfWork.Save(useChangeTracker: false);
+                }),
+                "UnitOfWork.SaveAsync con transacción" => GuardarConTransaccionAsync(unitOfWork),
+                _ => throw new ArgumentOutOfRangeException(nameof(guardado), guardado, null),
+            };
+        }
+
+        private static async Task GuardarConTransaccionAsync(FakeUnitOfWork unitOfWork)
+        {
+            await unitOfWork.OpenTransactionAsync().ConfigureAwait(false);
+            await unitOfWork.SaveAsync(useChangeTracker: false).ConfigureAwait(false);
+        }
 
         private static FakeContext CrearContexto(string nombre, IInterceptor? interceptor)
         {
@@ -126,6 +176,14 @@ namespace Kitpymes.Core.EntityFramework.Tests
         }
 
         private static string Describir(Exception exception) => $"{exception.GetType().Name} ('{exception.Message}')";
+
+        private sealed class FakeUnitOfWork : EntityFrameworkUnitOfWork<FakeContext>
+        {
+            public FakeUnitOfWork(FakeContext context)
+                : base(context)
+            {
+            }
+        }
 
         private sealed class FalloAlGuardarInterceptor : SaveChangesInterceptor
         {

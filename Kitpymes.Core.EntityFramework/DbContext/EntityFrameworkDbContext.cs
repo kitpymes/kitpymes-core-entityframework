@@ -243,7 +243,8 @@ public abstract class EntityFrameworkDbContext : DbContext, IEntityFrameworkDbCo
 #pragma warning restore CS0162 // Se detectó código inaccesible
     }
 
-    // Deshace la transacción y cierra la conexión. Un error al cerrar no puede tapar el error original.
+    // Deshace la transacción y cierra la conexión. Un error al cerrar no puede tapar el error original, que es el
+    // que se relanza, y el contexto no se libera: es de quien lo creó (normalmente, el contenedor de dependencias).
     private void CloseTransaction()
     {
         try
@@ -264,8 +265,6 @@ public abstract class EntityFrameworkDbContext : DbContext, IEntityFrameworkDbCo
         {
             Transaction = null!;
         }
-
-        Dispose();
     }
 
     private async Task CloseTransactionAsync()
@@ -291,8 +290,6 @@ public abstract class EntityFrameworkDbContext : DbContext, IEntityFrameworkDbCo
         {
             Transaction = null!;
         }
-
-        await DisposeAsync().ConfigureAwait(false);
     }
 
     #endregion Private

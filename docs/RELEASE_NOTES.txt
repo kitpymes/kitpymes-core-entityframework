@@ -1,10 +1,11 @@
 # v.2.1.0
-Corrección al guardar: SaveChanges, SaveChangesAsync, SaveChangesWithTransaction y SaveChangesWithTransactionAsync de EntityFrameworkDbContext.
+Corrección al guardar, en EntityFrameworkDbContext (SaveChanges, SaveChangesAsync, SaveChangesWithTransaction, SaveChangesWithTransactionAsync) y en EntityFrameworkUnitOfWork (Save, SaveAsync).
+- CAMBIO DE COMPORTAMIENTO: el tipo de la excepción al guardar ya no es siempre DbUpdateException. Quien capturara DbUpdateException para cualquier error al guardar tiene que capturar también los otros tipos que le interesen (por ejemplo, OperationCanceledException). La API pública no cambia.
 - Antes, cualquier error al guardar se cambiaba por una DbUpdateException nueva con el mensaje completo de la base de datos, que trae los valores (por ejemplo, el correo de un índice único repetido), y sin la excepción original. El valor acababa en el log y no se podía saber qué había fallado (un duplicado no se podía traducir a un conflicto).
-- Ahora sale la excepción que lanza EF Core, sin cambiarla: la misma DbUpdateException o DbUpdateConcurrencyException, con sus Entries y su InnerException (la del proveedor; en SQL Server, la SqlException con su Number, 2601 o 2627 para un duplicado). Un error que no es de la base de datos (una cancelación, por ejemplo) sale con su tipo, y no como DbUpdateException.
+- Ahora sale la excepción que lanza EF Core, sin cambiarla: la misma DbUpdateException o DbUpdateConcurrencyException, con sus Entries y su InnerException (la del proveedor; en SQL Server, la SqlException con su Number, 2601 o 2627 para un duplicado).
 - Ojo, quien registre la excepción entera: la InnerException del proveedor sigue trayendo los valores, igual que en EF Core. Para que no lleguen al log, traducir los errores conocidos (un duplicado a un conflicto) y registrar sólo el tipo de los demás.
-- SaveChangesWithTransaction y SaveChangesWithTransactionAsync con un proveedor que no es relacional (la BD en memoria): el error al cerrar la conexión ya no tapa el error original.
-- Sin cambios en la API pública. Cambia el comportamiento: quien capturara DbUpdateException para cualquier error al guardar tiene que capturar también los otros tipos que le interesen.
+- Al fallar con transacción, la transacción se deshace y la conexión se cierra como antes, pero el contexto ya no se libera (es de quien lo creó): las Entries de la excepción se pueden seguir usando. Un error al cerrar ya no tapa el error original, y con un proveedor que no es relacional (la BD en memoria) cerrar la conexión ya no falla.
+- Probado con la BD en memoria, que no tiene transacciones de verdad: que la transacción se deshace con un proveedor relacional no está probado en esta librería.
 
 # v.2.0.1
 Corrección de seguridad: Microsoft.EntityFrameworkCore.SqlServer 8.0.1 traía paquetes con vulnerabilidades conocidas, que heredaba quien instalaba EntityFramework.

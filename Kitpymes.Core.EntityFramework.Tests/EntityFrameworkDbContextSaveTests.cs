@@ -70,7 +70,7 @@ namespace Kitpymes.Core.EntityFramework.Tests
 
             using (var context = CrearContexto(nombre, interceptor: null))
             {
-                context.Set<FakeEntity>().Add(new FakeEntity(1, "Uno"));
+                context.Set<FakeEntity>().Add(new FakeEntity(1, "Uno", "Apellido", new FakeValueObject()));
                 await Guardar(context, guardado).ConfigureAwait(false);
             }
 
@@ -86,7 +86,7 @@ namespace Kitpymes.Core.EntityFramework.Tests
 
             try
             {
-                context.Set<FakeEntity>().Add(new FakeEntity(1, "Uno"));
+                context.Set<FakeEntity>().Add(new FakeEntity(1, "Uno", "Apellido", new FakeValueObject()));
                 await Guardar(context, guardado).ConfigureAwait(false);
             }
             catch (Exception exception)

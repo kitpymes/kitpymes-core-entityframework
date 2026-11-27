@@ -47,7 +47,8 @@ namespace Kitpymes.Core.EntityFramework.Tests
                 "An error occurred while saving the entity changes. See the inner exception for details.",
                 new InvalidOperationException("Cannot insert duplicate key row. The duplicate key value is (ana@ejemplo.test)."));
 
-            var (lanzada, _) = await GuardarConFallo(guardado, original).ConfigureAwait(false);
+            var (lanzada, context) = await GuardarConFallo(guardado, original).ConfigureAwait(false);
+            await context.DisposeAsync().ConfigureAwait(false);
 
             Assert.AreSame(original, lanzada, $"{guardado} no lanza la excepción original sino {Describir(lanzada)}.");
         }
@@ -58,7 +59,8 @@ namespace Kitpymes.Core.EntityFramework.Tests
         {
             var original = new DbUpdateConcurrencyException("Concurrencia.");
 
-            var (lanzada, _) = await GuardarConFallo(guardado, original).ConfigureAwait(false);
+            var (lanzada, context) = await GuardarConFallo(guardado, original).ConfigureAwait(false);
+            await context.DisposeAsync().ConfigureAwait(false);
 
             Assert.AreSame(original, lanzada, $"{guardado} no lanza la excepción original sino {Describir(lanzada)}.");
         }
@@ -69,7 +71,8 @@ namespace Kitpymes.Core.EntityFramework.Tests
         {
             var original = new OperationCanceledException("Cancelado.");
 
-            var (lanzada, _) = await GuardarConFallo(guardado, original).ConfigureAwait(false);
+            var (lanzada, context) = await GuardarConFallo(guardado, original).ConfigureAwait(false);
+            await context.DisposeAsync().ConfigureAwait(false);
 
             Assert.AreSame(original, lanzada, $"{guardado} no lanza la cancelación sino {Describir(lanzada)}.");
         }

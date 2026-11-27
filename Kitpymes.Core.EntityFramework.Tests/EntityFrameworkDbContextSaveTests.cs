@@ -27,7 +27,7 @@ namespace Kitpymes.Core.EntityFramework.Tests
         }
 
         [TestMethod]
-        [DynamicData(nameof(Guardados), DynamicDataSourceType.Method)]
+        [DynamicData(nameof(Guardados))]
         public async Task Guardar_ConErrorDeLaBaseDeDatos_LanzaLaExcepcionOriginal(string guardado)
         {
             var original = new DbUpdateException(
@@ -41,7 +41,7 @@ namespace Kitpymes.Core.EntityFramework.Tests
         }
 
         [TestMethod]
-        [DynamicData(nameof(Guardados), DynamicDataSourceType.Method)]
+        [DynamicData(nameof(Guardados))]
         public async Task Guardar_ConErrorDeConcurrencia_LanzaLaExcepcionOriginal(string guardado)
         {
             var original = new DbUpdateConcurrencyException("Concurrencia.");
@@ -52,7 +52,7 @@ namespace Kitpymes.Core.EntityFramework.Tests
         }
 
         [TestMethod]
-        [DynamicData(nameof(Guardados), DynamicDataSourceType.Method)]
+        [DynamicData(nameof(Guardados))]
         public async Task Guardar_Cancelado_LanzaLaCancelacion(string guardado)
         {
             var original = new OperationCanceledException("Cancelado.");
@@ -63,7 +63,7 @@ namespace Kitpymes.Core.EntityFramework.Tests
         }
 
         [TestMethod]
-        [DynamicData(nameof(Guardados), DynamicDataSourceType.Method)]
+        [DynamicData(nameof(Guardados))]
         public async Task Guardar_SinError_GuardaLaEntidad(string guardado)
         {
             var nombre = $"bd-{Guid.NewGuid()}";
